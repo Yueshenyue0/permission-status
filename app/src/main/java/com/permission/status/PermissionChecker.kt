@@ -94,11 +94,16 @@ class PermissionChecker(private val context: Context) {
         return enabled.contains(context.packageName)
     }
 
-    /** 特殊权限：安装未知应用 */
-    fun hasInstallUnknownApps(): Boolean =
+    /** 特殊权限：安装未知应用（未声明该权限时系统会抛 SecurityException，必须兜底） */
+    fun hasInstallUnknownApps(): Boolean = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             pm.canRequestPackageInstalls()
-        } else true
+        } else {
+            true
+        }
+    } catch (t: Throwable) {
+        false
+    }
 
     /** 特殊权限：是否已忽略电池优化 */
     fun isIgnoringBatteryOptimizations(): Boolean {
@@ -116,16 +121,20 @@ class PermissionChecker(private val context: Context) {
         return enabled.contains(context.packageName)
     }
 
-    /** 检测特殊权限项 */
-    fun checkSpecial(item: SpecialPermissionItem): PermState = when (item.id) {
-        "usage_access" -> boolToState(hasUsageAccess())
-        "overlay" -> boolToState(hasOverlay())
-        "write_settings" -> boolToState(hasWriteSettings())
-        "notification_listener" -> boolToState(hasNotificationListener())
-        "install_unknown" -> boolToState(hasInstallUnknownApps())
-        "battery_optimization" -> boolToState(isIgnoringBatteryOptimizations())
-        "accessibility" -> boolToState(hasAccessibility())
-        else -> PermState.NOT_APPLICABLE
+    /** 检测特殊权限项（整体兜底：任何系统异常都降级为未授权，绝不崩溃） */
+    fun checkSpecial(item: SpecialPermissionItem): PermState = try {
+        when (item.id) {
+            "usage_access" -> boolToState(hasUsageAccess())
+            "overlay" -> boolToState(hasOverlay())
+            "write_settings" -> boolToState(hasWriteSettings())
+            "notification_listener" -> boolToState(hasNotificationListener())
+            "install_unknown" -> boolToState(hasInstallUnknownApps())
+            "battery_optimization" -> boolToState(isIgnoringBatteryOptimizations())
+            "accessibility" -> boolToState(hasAccessibility())
+            else -> PermState.NOT_APPLICABLE
+        }
+    } catch (t: Throwable) {
+        PermState.DENIED
     }
 
     private fun boolToState(value: Boolean): PermState =
