@@ -156,23 +156,35 @@ class PermissionChecker(private val context: Context) {
         )
     }
 
-    private fun isHyperOs(): Boolean = try {
-        val clazz = Class.forName("android.os.SystemProperties")
-        val get = clazz.getMethod("get", String::class.java)
-        val miOsVersion = get.invoke(null, "ro.mi.os.version.name") as? String
-        val miuiVersion = get.invoke(null, "ro.miui.ui.version.name") as? String
-        !miOsVersion.isNullOrBlank() || !miuiVersion.isNullOrBlank()
-    } catch (e: Exception) {
-        false
+    private fun isHyperOs(): Boolean {
+        val osName = readSystemProperty("ro.mi.os.version.name")
+        val uiName = readSystemProperty("ro.miui.ui.version.name")
+        val manufacturer = Build.MANUFACTURER.orEmpty().lowercase()
+        val isXiaomiFamily =
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco")
+        return osName.isNotEmpty() || uiName.isNotEmpty() || isXiaomiFamily
+    }
+
+    private fun readSystemProperty(key: String): String {
+        return try {
+            val clazz = Class.forName("android.os.SystemProperties")
+            val getter = clazz.getMethod("get", String::class.java)
+            val raw = getter.invoke(null, key)
+            if (raw is String) raw else ""
+        } catch (t: Throwable) {
+            ""
+        }
     }
 
     /** 系统信息附件，用于「设备信息」卡片 */
-    fun storageSummary(): String = try {
-        val stat = android.os.StatFs(Environment.getDataDirectory().path)
-        val totalGb = stat.blockCountLong * stat.blockSizeLong / 1024.0 / 1024.0 / 1024.0
-        String.format("%.1f GB 可用空间", totalGb)
-    } catch (e: Exception) {
-        "未知"
+    fun storageSummary(): String {
+        return try {
+            val stat = android.os.StatFs(Environment.getDataDirectory().path)
+            val totalGb = stat.blockCountLong * stat.blockSizeLong / 1024.0 / 1024.0 / 1024.0
+            String.format("%.1f GB 可用空间", totalGb)
+        } catch (t: Throwable) {
+            "未知"
+        }
     }
 }
 
