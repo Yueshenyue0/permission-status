@@ -1,7 +1,6 @@
 [versions]
 agp = "9.4.1"
 kotlin = "2.4.20"
-composeMultiplatform = "1.12.1"
 activityCompose = "1.12.0"
 coreKtx = "1.17.0"
 miuix = "0.9.4"
@@ -14,5 +13,4 @@ androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
